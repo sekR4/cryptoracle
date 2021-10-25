@@ -1,13 +1,14 @@
-import requests
-import datetime
+from datetime import date
+
 import pandas as pd
+import requests
 
 
 def get_ts(
     coin: str = "nexo", vs_currency: str = "eur", days: int = 30
 ) -> pd.DataFrame:
     """Queries time series data from the coingecko API of a selected coin/token.
-    The result will be returned in a pandas DataFrame.
+    The result will be returned as a pandas DataFrame.
 
     Parameters
     ----------
@@ -22,11 +23,11 @@ def get_ts(
     -------
     pd.DataFrame
         example:
-                    prices
-        dates
-        2021-08-22	1.609613
-        2021-08-23	1.645399
-        2021-08-24	1.671302
+
+                    prices	    market_caps	    total_volumes
+        2019-11-03	0.084479	4.726148e+07	8.724440e+06
+        2019-11-04	0.089416	5.003882e+07	9.235387e+06
+        2019-11-05	0.093230	5.220886e+07	9.646853e+06
     """
 
     # https://www.coingecko.com/api/documentations/v3#/coins/get_coins__id__market_chart
@@ -41,17 +42,19 @@ def get_ts(
         "{coin}/market_chart?vs_currency={vs_currency}&days={days}&interval={interval}"
     )
     url = base_url + param_url.format(**params)
-
     page = requests.get(url)
 
     if page.status_code == 200:
         prices = [i[1] for i in page.json()["prices"]]
-        dates = [
-            datetime.date.fromtimestamp(i[0] / 1000) for i in page.json()["prices"]
-        ]
+        market_caps = [i[1] for i in page.json()["market_caps"]]
+        total_volumes = [i[1] for i in page.json()["total_volumes"]]
+        dates = [date.fromtimestamp(i[0] / 1000) for i in page.json()["prices"]]
 
-        df = pd.DataFrame({"dates": dates, "prices": prices})
-        df.index = df.dates
-        df.drop("dates", axis=1, inplace=True)
-
-        return df
+        return pd.DataFrame(
+            {
+                "prices": prices,
+                "market_caps": market_caps,
+                "total_volumes": total_volumes,
+            },
+            index=dates,
+        )
