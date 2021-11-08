@@ -50,7 +50,7 @@ def get_ts(
         total_volumes = [i[1] for i in page.json()["total_volumes"]]
         dates = [date.fromtimestamp(i[0] / 1000) for i in page.json()["prices"]]
 
-        return pd.DataFrame(
+        df = pd.DataFrame(
             {
                 "prices": prices,
                 "market_caps": market_caps,
@@ -58,3 +58,8 @@ def get_ts(
             },
             index=dates,
         )
+        # If last/latest row appears twice, keep only the latest row
+        if len(df[df.index == df.index.max()]) > 1:
+            df = df[~(df.iloc[:] == df.iloc[-2])].dropna()
+
+        return df
